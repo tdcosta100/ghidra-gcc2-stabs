@@ -664,6 +664,25 @@ public class StabsScript extends GhidraScript {
     }
 
     private DataType createDataType(XrefType type) {
+        for (Symbol symbol : symbolList) {
+            if (type.targetName.equals(symbol.name)) {
+                switch (type.targetType) {
+                    case Enum:
+                        if (symbol.type instanceof EnumType) {
+                            return getDataType(symbol.type);
+                        }
+                        break;
+                    case Struct:
+                    case Union:
+                        if (symbol.type instanceof StructUnionType) {
+                            return getDataType(symbol.type);
+                        }
+                    default:
+                        break;
+                }
+            }
+        }
+
         if (type.targetType == XrefType.TargetType.Enum) {
             return new EnumDataType(getCurrentPath(), type.targetName, IntegerDataType.dataType.getLength());
         }
@@ -749,7 +768,18 @@ public class StabsScript extends GhidraScript {
 
         if (!symbol.name.isBlank()) {
             try {
-                dataType.setName(symbol.name);
+                boolean hasTypedef = false;
+
+                for (Symbol otherSymbol : symbolList) {
+                    if (otherSymbol.symbolType == Symbol.SymbolType.Typedef && symbol.name.equals(otherSymbol.name)) {
+                        hasTypedef = true;
+                        break;
+                    }
+                }
+                
+                if (!hasTypedef) {
+                    dataType.setName(symbol.name);
+                }
             } catch (DuplicateNameException|InvalidNameException e) {
                 throw new RuntimeException(e);
             }
