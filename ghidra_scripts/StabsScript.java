@@ -903,6 +903,7 @@ public class StabsScript extends GhidraScript {
                 break;
             case 3:
                 architecture = "x86";
+                break;
             default:
                 throw new RuntimeException("Unsupported architecture");
         }
