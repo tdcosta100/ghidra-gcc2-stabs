@@ -482,7 +482,7 @@ public class StabsScript extends GhidraScript {
         }
     }
 
-    public static class Symbol {
+    public static class Symbol extends Type {
         public static enum SymbolType {
             Undefined,
             StackVariable,
@@ -909,7 +909,13 @@ public class StabsScript extends GhidraScript {
 
         DataType baseDataType = getDataType(type.type);
 
-        if (!type.isArray && baseDataType instanceof IntegerDataType) {
+        if (
+            !type.isArray
+            && (
+                baseDataType instanceof IntegerDataType
+                || (baseDataType instanceof TypedefDataType && ((TypedefDataType)baseDataType).getDataType() instanceof IntegerDataType)
+            )
+        ) {
             if (type.minValue == 0L && type.maxValue == 0xffffffffL) {
                 return UnsignedIntegerDataType.dataType;
             }
@@ -1208,7 +1214,7 @@ public class StabsScript extends GhidraScript {
                         break;
                     }
                 }
-                
+
                 if (!hasTypedef) {
                     dataType.setName(symbol.name);
                 }
@@ -1222,6 +1228,8 @@ public class StabsScript extends GhidraScript {
 
     public void createTypedefType(Symbol symbol) {
         DataType dataType = new TypedefDataType(new CategoryPath(getCurrentPath()), symbol.name, getDataType(symbol.type));
+        dataTypeDict.put(symbol.type, dataType);
+
         currentProgram.getDataTypeManager().addDataType(dataType, DataTypeConflictHandler.REPLACE_HANDLER);
     }
 
@@ -1265,6 +1273,7 @@ public class StabsScript extends GhidraScript {
         symbol.category = getCurrentPath();
 
         symbolList.add(symbol);
+        putType(symbol);
     }
 
     private void importStabs() {
